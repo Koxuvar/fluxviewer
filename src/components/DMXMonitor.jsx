@@ -19,9 +19,37 @@ const generateSampleData = () => {
   return data;
 };
 
-function DMXMonitor({ onClose }) {
-  const [selectedUniverse, setSelectedUniverse] = useState(1);
-  const [availableUniverses] = useState([1, 2, 3, 4]); // Would come from backend
+function DMXMonitor({ onClose, config }) {
+  // Parse universe string (e.g., "1-4" or "1,2,5,8") into array
+  const parseUniverses = (str) => {
+    if (!str) return [1];
+    const result = [];
+    const parts = str.split(',').map(s => s.trim());
+    for (const part of parts) {
+      if (part.includes('-')) {
+        const [start, end] = part.split('-').map(Number);
+        if (!isNaN(start) && !isNaN(end)) {
+          for (let i = start; i <= end; i++) {
+            if (!result.includes(i)) result.push(i);
+          }
+        }
+      } else {
+        const num = parseInt(part);
+        if (!isNaN(num) && !result.includes(num)) result.push(num);
+      }
+    }
+    return result.length > 0 ? result.sort((a, b) => a - b) : [1];
+  };
+
+  const availableUniverses = parseUniverses(config.universes);
+  const [selectedUniverse, setSelectedUniverse] = useState(availableUniverses[0]);
+
+  // Reset selection if current universe is no longer available
+  useEffect(() => {
+    if (!availableUniverses.includes(selectedUniverse)) {
+      setSelectedUniverse(availableUniverses[0]);
+    }
+  }, [config.universes]);
   const [channelData, setChannelData] = useState(generateSampleData());
   const [highlightChannel, setHighlightChannel] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'compact'

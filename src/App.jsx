@@ -6,6 +6,27 @@ import DMXMonitor from './components/DMXMonitor';
 function App() {
   const [oscWindowOpen, setOscWindowOpen] = useState(false);
   const [dmxWindowOpen, setDmxWindowOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  
+  // Network configuration - shared or separate IPs
+  const [networkConfig, setNetworkConfig] = useState({
+    useSharedIp: true,
+    sharedIp: '0.0.0.0',
+    oscIp: '0.0.0.0',
+    oscPort: 8000,
+    dmxIp: '0.0.0.0',
+    universes: '1-4',
+  });
+
+  // OSC messages stored at app level so they persist when window closes
+  const [oscMessages, setOscMessages] = useState([]);
+  const [oscPaused, setOscPaused] = useState(false);
+
+  const clearOscMessages = () => setOscMessages([]);
+
+  const updateNetworkConfig = (key, value) => {
+    setNetworkConfig(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <div className="app">
@@ -25,7 +46,91 @@ function App() {
           <span className="status-dot active"></span>
           <span className="status-text">System Ready</span>
         </div>
+        <button 
+          className={`settings-btn ${settingsOpen ? 'active' : ''}`}
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          title="Network Settings"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+          </svg>
+        </button>
       </header>
+
+      {/* Network Settings Panel */}
+      {settingsOpen && (
+        <div className="settings-panel">
+          <div className="settings-header">
+            <h3>Network Configuration</h3>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={networkConfig.useSharedIp}
+                onChange={(e) => updateNetworkConfig('useSharedIp', e.target.checked)}
+              />
+              <span className="toggle-text">Use shared IP for all protocols</span>
+            </label>
+          </div>
+          
+          <div className="settings-grid">
+            {networkConfig.useSharedIp ? (
+              <div className="setting-group full-width">
+                <label>Listen IP</label>
+                <input
+                  type="text"
+                  value={networkConfig.sharedIp}
+                  onChange={(e) => updateNetworkConfig('sharedIp', e.target.value)}
+                  placeholder="0.0.0.0"
+                />
+                <span className="setting-hint">0.0.0.0 = all interfaces</span>
+              </div>
+            ) : (
+              <>
+                <div className="setting-group">
+                  <label>OSC Listen IP</label>
+                  <input
+                    type="text"
+                    value={networkConfig.oscIp}
+                    onChange={(e) => updateNetworkConfig('oscIp', e.target.value)}
+                    placeholder="0.0.0.0"
+                  />
+                </div>
+                <div className="setting-group">
+                  <label>DMX/sACN Listen IP</label>
+                  <input
+                    type="text"
+                    value={networkConfig.dmxIp}
+                    onChange={(e) => updateNetworkConfig('dmxIp', e.target.value)}
+                    placeholder="0.0.0.0"
+                  />
+                </div>
+              </>
+            )}
+            
+            <div className="setting-group">
+              <label>OSC Port</label>
+              <input
+                type="number"
+                value={networkConfig.oscPort}
+                onChange={(e) => updateNetworkConfig('oscPort', parseInt(e.target.value) || 8000)}
+                placeholder="8000"
+              />
+            </div>
+            
+            <div className="setting-group">
+              <label>sACN Universes</label>
+              <input
+                type="text"
+                placeholder="1-4"
+                value={networkConfig.universes}
+                onChange={(e) => updateNetworkConfig('universes', e.target.value)}
+              />
+              <span className="setting-hint">Range or comma-separated</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="app-main">
         <div className="monitor-controls">
@@ -90,14 +195,30 @@ function App() {
 
       {/* Floating Windows */}
       {oscWindowOpen && (
-        <OSCMonitor onClose={() => setOscWindowOpen(false)} />
+        <OSCMonitor 
+          onClose={() => setOscWindowOpen(false)}
+          messages={oscMessages}
+          setMessages={setOscMessages}
+          isPaused={oscPaused}
+          setIsPaused={setOscPaused}
+          onClear={clearOscMessages}
+          config={{
+            ip: networkConfig.useSharedIp ? networkConfig.sharedIp : networkConfig.oscIp,
+            port: networkConfig.oscPort
+          }}
+        />
       )}
       {dmxWindowOpen && (
-        <DMXMonitor onClose={() => setDmxWindowOpen(false)} />
+        <DMXMonitor 
+          onClose={() => setDmxWindowOpen(false)}
+          config={{
+            ip: networkConfig.useSharedIp ? networkConfig.sharedIp : networkConfig.dmxIp,
+            universes: networkConfig.universes
+          }}
+        />
       )}
     </div>
   );
 }
 
 export default App;
-

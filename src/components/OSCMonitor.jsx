@@ -1,20 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import './OSCMonitor.css';
 
-// Sample data for demonstration - replace with actual Tauri events
-const sampleMessages = [
-  { id: 1, timestamp: '14:32:05.123', address: '/cue/go', args: '[]', sender: '192.168.1.100' },
-  { id: 2, timestamp: '14:32:05.456', address: '/eos/fader/1/value', args: '[0.75]', sender: '192.168.1.101' },
-  { id: 3, timestamp: '14:32:05.789', address: '/resolume/layer1/clip1/connect', args: '[1]', sender: '192.168.1.102' },
-  { id: 4, timestamp: '14:32:06.012', address: '/d3/play', args: '["section_a"]', sender: '192.168.1.103' },
-  { id: 5, timestamp: '14:32:06.345', address: '/ma3/exec/1/1/fire', args: '[]', sender: '192.168.1.104' },
-];
-
-function OSCMonitor({ onClose }) {
-  const [messages, setMessages] = useState(sampleMessages);
+function OSCMonitor({ 
+  onClose, 
+  messages, 
+  setMessages, 
+  isPaused, 
+  setIsPaused, 
+  onClear,
+  config 
+}) {
   const [filterType, setFilterType] = useState('all'); // 'all', 'address', 'sender'
   const [filterValue, setFilterValue] = useState('');
-  const [isPaused, setIsPaused] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef(null);
   const windowRef = useRef(null);
@@ -42,10 +39,6 @@ function OSCMonitor({ onClose }) {
     return msg.address.toLowerCase().includes(searchValue) || 
            msg.sender.includes(searchValue);
   });
-
-  const clearMessages = () => {
-    setMessages([]);
-  };
 
   // Dragging handlers
   const handleMouseDown = (e) => {
@@ -99,6 +92,7 @@ function OSCMonitor({ onClose }) {
             </svg>
           </span>
           <span>OSC Monitor</span>
+          <span className="port-badge">:{config.port}</span>
           <span className="message-count">{filteredMessages.length} messages</span>
         </div>
         <div className="window-controls">
@@ -118,7 +112,7 @@ function OSCMonitor({ onClose }) {
               </svg>
             )}
           </button>
-          <button className="control-btn" onClick={clearMessages} title="Clear">
+          <button className="control-btn" onClick={onClear} title="Clear">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
             </svg>
@@ -214,4 +208,3 @@ function OSCMonitor({ onClose }) {
 }
 
 export default OSCMonitor;
-
