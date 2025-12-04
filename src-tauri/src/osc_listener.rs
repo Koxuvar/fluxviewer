@@ -5,6 +5,7 @@ use std::net::UdpSocket;
 use chrono::Local;
 
 use crate::protocols::OscData;
+use crate::osc_message_data::OscMessageData;
 
 pub fn start(tx: mpsc::Sender<OscData>) {
     let socket = UdpSocket::bind("0.0.0.0:8000").expect("Could not bind to UDP socket on port 8000");
@@ -24,9 +25,9 @@ pub fn start(tx: mpsc::Sender<OscData>) {
                         match packet {
                             rosc::OscPacket::Message(msg)  => {
                                 tx.send(OscData {
-                                    message: msg,
+                                    message: OscMessageData::from(&msg),
                                     timestamp,
-                                    sender: source_addr,
+                                    sender: source_addr.to_string(),
                                 }).unwrap();
                             },
                             rosc::OscPacket::Bundle(bundle) => {
@@ -34,9 +35,9 @@ pub fn start(tx: mpsc::Sender<OscData>) {
                                     match message {
                                         rosc::OscPacket::Message(msg) => {
                                             tx.send(OscData {
-                                                message:msg,
+                                                message: OscMessageData::from(&msg),
                                                 timestamp: timestamp.clone(),
-                                                sender: source_addr,
+                                                sender: source_addr.to_string(),
                                             }).unwrap();
                                         },
                                         rosc::OscPacket::Bundle(_nested_bundle) => {

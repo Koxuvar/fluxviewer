@@ -1,23 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/tauri';
+import { listen } from '@tauri-apps/api/event';
 import './DMXMonitor.css';
-
-// Generate sample DMX data - replace with actual Tauri events
-const generateSampleData = () => {
-  const data = new Array(512).fill(0);
-  // Add some random values for demo
-  data[0] = 255;  // Dimmer
-  data[1] = 128;  // Red
-  data[2] = 64;   // Green
-  data[3] = 200;  // Blue
-  data[10] = 180;
-  data[15] = 220;
-  data[24] = 100;
-  data[50] = 75;
-  data[100] = 255;
-  data[150] = 128;
-  data[200] = 64;
-  return data;
-};
 
 function DMXMonitor({ onClose, config }) {
   // Parse universe string (e.g., "1-4" or "1,2,5,8") into array
@@ -43,14 +27,7 @@ function DMXMonitor({ onClose, config }) {
 
   const availableUniverses = parseUniverses(config.universes);
   const [selectedUniverse, setSelectedUniverse] = useState(availableUniverses[0]);
-
-  // Reset selection if current universe is no longer available
-  useEffect(() => {
-    if (!availableUniverses.includes(selectedUniverse)) {
-      setSelectedUniverse(availableUniverses[0]);
-    }
-  }, [config.universes]);
-  const [channelData, setChannelData] = useState(generateSampleData());
+  const [channelData, setChannelData] = useState(new Array(512).fill(0));
   const [highlightChannel, setHighlightChannel] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'compact'
   const [isMinimized, setIsMinimized] = useState(false);
@@ -59,11 +36,64 @@ function DMXMonitor({ onClose, config }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Reset selection if current universe is no longer available
+  useEffect(() => {
+    if (!availableUniverses.includes(selectedUniverse)) {
+      setSelectedUniverse(availableUniverses[0]);
+    }
+  }, [config.universes]);
+
+  // Subscribe to universe when selected
+  const handleUniverseSelect = async (universe) => {
+    if (universe === selectedUniverse) return;
+
+    // Unsubscribe from current
+    try {
+      await invoke('sacn_unsubscribe_universe', { universe: selectedUniverse });
+    } catch (err) {
+      console.error('Failed to unsubscribe:', err);
+    }
+
+    setSelectedUniverse(universe);
+    setChannelData(new Array(512).fill(0));
+
+    // Subscribe to new
+    try {
+      await invoke('sacn_subscribe_universe', { universe });
+    } catch (err) {
+      console.error('Failed to subscribe:', err);
+    }
+  }; 
+
+  // Subscribe to initial universe on mount, cleanup on unmount
+  useEffect(() => {
+    invoke('sacn_subscribe_universe', { universe: selectedUniverse })
+      .catch(err => console.error('Failed to subscribe:', err));
+
+    return () => {
+      invoke('sacn_unsubscribe_universe', { universe: selectedUniverse })
+        .catch(err => console.error('Failed to unsubscribe on close:', err));
+    };
+  }, []); 
+
+  // Listen for DMX data from backend
+  useEffect(() => {
+    const unlisten = listen('dmx-universe-data', (event) => {
+      // Expecting payload: { universe: number, channels: number[] }
+      if (event.payload.universe === selectedUniverse) {
+        setChannelData(event.payload.channels);
+      }
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, [selectedUniverse]);
+
   // Calculate background color based on value (0-255)
   const getChannelColor = (value) => {
     if (value === 0) return 'transparent';
     const intensity = value / 255;
-    // Cyan-ish color that matches the DMX accent
     return `rgba(167, 139, 250, ${intensity * 0.6})`;
   };
 
@@ -184,7 +214,7 @@ function DMXMonitor({ onClose, config }) {
                 <button
                   key={uni}
                   className={`universe-tab ${selectedUniverse === uni ? 'active' : ''}`}
-                  onClick={() => setSelectedUniverse(uni)}
+                  onClick={() => handleUniverseSelect(uni)}
                 >
                   <span className="universe-num">{uni}</span>
                   <span className="universe-label">Universe</span>

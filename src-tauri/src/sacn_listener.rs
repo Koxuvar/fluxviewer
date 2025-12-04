@@ -10,7 +10,7 @@ pub fn start(tx: mpsc::Sender<DmxData>, command_rx: mpsc::Receiver<SacnUniverser
         "0.0.0.0:5568".parse().unwrap(),
         None
         ).expect("Failed to create SACN Receiver");
-
+    
     loop{
         while let Ok(cmd) = command_rx.try_recv() {
             match cmd {
