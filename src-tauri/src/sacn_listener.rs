@@ -1,48 +1,74 @@
 use std::{sync::mpsc, time::Duration};
 use chrono::Local;
 use sacn::receive::SacnReceiver;
+use crate::protocols;
 
-use crate::protocols::{DmxData, SacnUniverserCommand};
+pub fn start(tx: mpsc::Sender<protocols::DmxData>, command_rx: mpsc::Receiver<protocols::SacnCommand>) {
 
-pub fn start(tx: mpsc::Sender<DmxData>, command_rx: mpsc::Receiver<SacnUniverserCommand>) {
+    let mut receiver: Option<SacnReceiver> = None;
 
-    let mut receiver = SacnReceiver::with_ip(
-        "0.0.0.0:5568".parse().unwrap(),
-        None
-        ).expect("Failed to create SACN Receiver");
-    
-    loop{
-        while let Ok(cmd) = command_rx.try_recv() {
-            match cmd {
-                SacnUniverserCommand::SubscribeUniverse(u) => {
-                    receiver.listen_universes(&[u]).expect("Failed to subscribe to universe");
-                    println!("Subscribed to universe {}", u);
-                },
-                SacnUniverserCommand::UnsubscribeUniverse(u) => {
-                    receiver.mute_universe(u).expect("Failed to unsubscribe from universe");
-                    println!("Unsubscribed from universe {}", u);
+    loop {
+        match command_rx.try_recv() {
+            Ok(protocols::SacnCommand::Start {ip}) => {
+                let addr = format!("{}:5568", ip);
+                match SacnReceiver::with_ip(
+                    addr.parse().expect("Invalid IP address"),
+                    None,
+                ) {
+                    Ok(r) => {
+                        receiver = Some(r);
+                        println!("sACN Listener started on {}", addr);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to start sACN Listener on {}: {}", addr, e);
+                        receiver = None;
+                    }
                 }
             }
+            Ok(protocols::SacnCommand::Stop) => {
+                receiver = None;
+                println!("sACN Listener stopped");
+            }
+            Ok(protocols::SacnCommand::SubscribeUniverse(u)) => {
+                if let Some(ref mut r) = receiver {
+                    match r.listen_universes(&[u]) {
+                        Ok(_) => println!("Subscribed to universe {}", u),
+                        Err(e) => eprintln!("Failed to subscribe to universe {}: {}", u, e),
+                    }
+                }
+            }
+            Ok(protocols::SacnCommand::UnsubscribeUniverse(u)) => {
+                if let Some(ref mut r) = receiver {
+                    match r.mute_universe(u) {
+                        Ok(_) => println!("Unsubscribed from universe {}", u),
+                        Err(e) => eprintln!("Failed to unsubscribe from universe {}: {}", u, e),
+                    }
+                }
+            }
+            Err(_) => {}
         }
 
-        match receiver.recv( Some(Duration::from_millis(100))) {
-            Ok(packets) => {
-                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-
-                for packet in packets {
-                    tx.send(DmxData {
-                        universe: packet.universe,
-                        channels: packet.values[1..].to_vec(),
-                        _timestamp: timestamp.clone(),
-                    }).unwrap();
+        if let Some(ref mut r)  = receiver {
+            match r.recv(Some(Duration::from_millis(100))) {
+                Ok(packets) => {
+                    let _timestamp = Local::now().format("%H:%M:%S%.3f").to_string();
+                    
+                    for packet in packets {
+                        tx.send(protocols::DmxData {
+                            universe: packet.universe,
+                            channels: packet.values[1..].to_vec(),
+                        }).unwrap();
+                    }
                 }
-            },
-            Err(e) => {
-                let error_str = e.to_string();
-                if !error_str.contains("timeout") && !error_str.contains("No data") {
-                    eprintln!("Error receiving SACN packet: {}", e);
-                }
+                Err(e) => {
+                    let error_str = e.to_string();
+                    if !error_str.contains("timeout") && !error_str.contains("No data") {
+                        eprintln!("Error receiving SACN packet: {}", e);
+                    }
+               }
             }
+        } else {
+            std::thread::sleep(Duration::from_millis(100));
         }
     }
 }

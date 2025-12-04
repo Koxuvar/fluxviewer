@@ -6,7 +6,6 @@ use crate::osc_message_data::OscMessageData;
 pub struct DmxData {
     pub universe: u16,
     pub channels: Vec<u8>,
-    pub _timestamp: String,
 }
 
 #[derive(Serialize, Clone)]
@@ -16,7 +15,14 @@ pub struct OscData {
     pub sender: String,
 }
 
-pub enum SacnUniverserCommand {
+pub enum SacnCommand{
+    Start {ip: String},
+    Stop,
     SubscribeUniverse(u16),
     UnsubscribeUniverse(u16),
+}
+
+pub enum OscCommand {
+    Start { ip: String, port: u16 },
+    Stop,
 }

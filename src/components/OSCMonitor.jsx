@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import './OSCMonitor.css';
 
 function OSCMonitor({ 
@@ -10,14 +12,71 @@ function OSCMonitor({
   onClear,
   config 
 }) {
-  const [filterType, setFilterType] = useState('all'); // 'all', 'address', 'sender'
+  const [filterType, setFilterType] = useState('all');
   const [filterValue, setFilterValue] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
   const windowRef = useRef(null);
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const messageIdRef = useRef(0);
+
+  // Start OSC listener on mount, stop on unmount
+  useEffect(() => {
+    const startListener = async () => {
+      try {
+        await invoke('osc_start_listener', { ip: config.ip, port: config.port });
+        setIsListening(true);
+      } catch (err) {
+        console.error('Failed to start OSC listener:', err);
+      }
+    };
+
+    startListener();
+
+    return () => {
+      invoke('osc_stop_listener')
+        .catch(err => console.error('Failed to stop OSC listener:', err));
+    };
+  }, [config.ip, config.port]);
+
+  // Listen for OSC messages from backend
+  useEffect(() => {
+    const unlisten = listen('osc-message', (event) => {
+      if (isPaused) return;
+      
+      const payload = event.payload;
+      const newMessage = {
+        id: messageIdRef.current++,
+        timestamp: payload.timestamp,
+        address: payload.message.addr,
+        args: formatArgs(payload.message.args),
+        sender: payload.sender,
+      };
+
+      setMessages(prev => {
+        const updated = [...prev, newMessage];
+        // Keep only last 100 messages
+        return updated.slice(-100);
+      });
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, [isPaused, setMessages]);
+
+  // Format OSC arguments for display
+  const formatArgs = (args) => {
+    if (!args || args.length === 0) return '[]';
+    return '[' + args.map(arg => {
+      if (arg.type === 'String') return `"${arg.value}"`;
+      if (arg.type === 'Nil') return 'nil';
+      return arg.value;
+    }).join(', ') + ']';
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -93,6 +152,9 @@ function OSCMonitor({
           </span>
           <span>OSC Monitor</span>
           <span className="port-badge">:{config.port}</span>
+          <span className={`status-badge ${isListening ? 'listening' : 'stopped'}`}>
+            {isListening ? 'LISTENING' : 'STOPPED'}
+          </span>
           <span className="message-count">{filteredMessages.length} messages</span>
         </div>
         <div className="window-controls">

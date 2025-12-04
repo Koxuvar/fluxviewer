@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './DMXMonitor.css';
 
 function DMXMonitor({ onClose, config }) {
-  // Parse universe string (e.g., "1-4" or "1,2,5,8") into array
+  // Parse universe string
   const parseUniverses = (str) => {
     if (!str) return [1];
     const result = [];
@@ -29,8 +29,9 @@ function DMXMonitor({ onClose, config }) {
   const [selectedUniverse, setSelectedUniverse] = useState(availableUniverses[0]);
   const [channelData, setChannelData] = useState(new Array(512).fill(0));
   const [highlightChannel, setHighlightChannel] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'compact'
+  const [viewMode, setViewMode] = useState('grid');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const windowRef = useRef(null);
   const [position, setPosition] = useState({ x: 150, y: 150 });
   const [isDragging, setIsDragging] = useState(false);
@@ -43,11 +44,34 @@ function DMXMonitor({ onClose, config }) {
     }
   }, [config.universes]);
 
-  // Subscribe to universe when selected
+  // Start sACN listener on mount, stop on unmount
+  useEffect(() => {
+    const startListener = async () => {
+      console.log('Starting sACN listener on IP:', config.ip);
+      try {
+        await invoke('sacn_start_listener', { ip: config.ip });
+        setIsListening(true);
+        // Subscribe to initial universe
+        await invoke('sacn_subscribe_universe', { universe: selectedUniverse });
+      } catch (err) {
+        console.error('Failed to start sACN listener:', err);
+      }
+    };
+
+    startListener();
+
+    return () => {
+      invoke('sacn_unsubscribe_universe', { universe: selectedUniverse })
+        .catch(err => console.error('Failed to unsubscribe:', err));
+      invoke('sacn_stop_listener')
+        .catch(err => console.error('Failed to stop sACN listener:', err));
+    };
+  }, []);
+
+  // Handle universe tab selection
   const handleUniverseSelect = async (universe) => {
     if (universe === selectedUniverse) return;
 
-    // Unsubscribe from current
     try {
       await invoke('sacn_unsubscribe_universe', { universe: selectedUniverse });
     } catch (err) {
@@ -57,29 +81,16 @@ function DMXMonitor({ onClose, config }) {
     setSelectedUniverse(universe);
     setChannelData(new Array(512).fill(0));
 
-    // Subscribe to new
     try {
       await invoke('sacn_subscribe_universe', { universe });
     } catch (err) {
       console.error('Failed to subscribe:', err);
     }
-  }; 
-
-  // Subscribe to initial universe on mount, cleanup on unmount
-  useEffect(() => {
-    invoke('sacn_subscribe_universe', { universe: selectedUniverse })
-      .catch(err => console.error('Failed to subscribe:', err));
-
-    return () => {
-      invoke('sacn_unsubscribe_universe', { universe: selectedUniverse })
-        .catch(err => console.error('Failed to unsubscribe on close:', err));
-    };
-  }, []); 
+  };
 
   // Listen for DMX data from backend
   useEffect(() => {
     const unlisten = listen('dmx-universe-data', (event) => {
-      // Expecting payload: { universe: number, channels: number[] }
       if (event.payload.universe === selectedUniverse) {
         setChannelData(event.payload.channels);
       }
@@ -169,6 +180,9 @@ function DMXMonitor({ onClose, config }) {
             </svg>
           </span>
           <span>DMX Monitor</span>
+          <span className={`status-badge ${isListening ? 'listening' : 'stopped'}`}>
+            {isListening ? 'LISTENING' : 'STOPPED'}
+          </span>
           <span className="message-count">Universe {selectedUniverse}</span>
         </div>
         <div className="window-controls">
@@ -229,7 +243,6 @@ function DMXMonitor({ onClose, config }) {
             </div>
           </div>
 
-          {/* Column headers */}
           <div className="channel-header">
             <div className="row-label"></div>
             {[...Array(16)].map((_, i) => (
@@ -263,7 +276,6 @@ function DMXMonitor({ onClose, config }) {
             ))}
           </div>
 
-          {/* Channel info tooltip */}
           {highlightChannel && (
             <div className="channel-tooltip">
               <span className="tooltip-channel">Channel {highlightChannel}</span>

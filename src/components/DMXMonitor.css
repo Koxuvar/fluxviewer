@@ -288,3 +288,23 @@
 .channel-cell[data-intensity="full"] {
   background: rgba(167, 139, 250, 0.7);
 }
+
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-left: var(--space-xs);
+}
+
+.status-badge.listening {
+  background: rgba(74, 222, 128, 0.2);
+  color: var(--accent-success);
+}
+
+.status-badge.stopped {
+  background: rgba(248, 113, 113, 0.2);
+  color: var(--accent-error);
+}
