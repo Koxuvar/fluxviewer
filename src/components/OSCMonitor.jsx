@@ -45,15 +45,17 @@ function OSCMonitor({
   // Listen for OSC messages from backend
   useEffect(() => {
     const unlisten = listen('osc-message', (event) => {
+      console.log('osc-message event: ', event.payload);
+      console.log('message: ', event.payload.message);
       if (isPaused) return;
       
       const payload = event.payload;
       const newMessage = {
         id: messageIdRef.current++,
         timestamp: payload.timestamp,
-        address: payload.message.addr,
+        address: payload.message.address,
         args: formatArgs(payload.message.args),
-        sender: payload.sender,
+        sender: payload.sender.split(':')[0],
       };
 
       setMessages(prev => {
