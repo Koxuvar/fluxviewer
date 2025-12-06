@@ -4,7 +4,7 @@ use std::io::Read;
 use chrono::Local;
 use serialport;
 
-use crate::protocols::{SerialData, SerialCommand};
+use crate::protocols::{SerialData, SerialCommand, SerialPortInfo};
 
 pub fn start(tx: Sender<SerialData>, command_rx: Receiver<SerialCommand>) {
     let mut port: Option<Box<dyn serialport::SerialPort>> = None;
@@ -77,10 +77,30 @@ pub fn start(tx: Sender<SerialData>, command_rx: Receiver<SerialCommand>) {
     }
 }
 
-pub fn list_ports() -> Vec<String> {
+pub fn list_ports() -> Vec<SerialPortInfo> {
     serialport::available_ports()
         .unwrap_or_default()
         .iter()
-        .map(|p| p.port_name.clone())
+        .map(|p| {
+            let description = match &p.port_type {
+                serialport::SerialPortType::UsbPort(info) => {
+                    let mfg = info.manufacturer.clone().unwrap_or_default();
+                    let prod = info.product.clone().unwrap_or_default();
+                    let combined = format!("{} {}", mfg, prod).trim().to_string();
+                    if combined.is_empty() {
+                        "USB Serial".to_string()
+                    } else {
+                        combined
+                    }
+                }
+                serialport::SerialPortType::BluetoothPort => "Bluetooth".to_string(),
+                serialport::SerialPortType::PciPort => "PCI/Built-in".to_string(),
+                serialport::SerialPortType::Unknown => "Serial Port".to_string(),
+            };
+            SerialPortInfo {
+                name: p.port_name.clone(),
+                description,
+            }
+        })
         .collect()
 }

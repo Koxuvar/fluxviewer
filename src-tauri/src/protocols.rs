@@ -23,6 +23,12 @@ pub struct SerialData {
     pub ascii: String,
 }
 
+#[derive(Serialize, Clone)]
+pub struct SerialPortInfo {
+    pub name: String,
+    pub description: String,
+}
+
 pub enum SerialCommand {
     Start { port: String, baud_rate: u32 },
     Stop,

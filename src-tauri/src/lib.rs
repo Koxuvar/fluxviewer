@@ -69,7 +69,7 @@ fn serial_stop_listener(state: tauri::State<'_, AppState>) -> Result<(), String>
 }
 
 #[tauri::command]
-fn serial_list_ports() -> Vec<String> {
+fn serial_list_ports() -> Vec<protocols::SerialPortInfo> {
     serial_listener::list_ports()
 }
 

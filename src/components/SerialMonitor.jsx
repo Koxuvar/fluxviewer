@@ -28,7 +28,7 @@ function SerialMonitor({ onClose }) {
         const ports = await invoke('serial_list_ports');
         setAvailablePorts(ports);
         if (ports.length > 0 && !selectedPort) {
-          setSelectedPort(ports[0]);
+          setSelectedPort(ports[0].name);
         }
       } catch (err) {
         console.error('Failed to list serial ports:', err);
@@ -220,7 +220,9 @@ function SerialMonitor({ onClose }) {
                       <option value="">No ports found</option>
                     )}
                     {availablePorts.map(port => (
-                      <option key={port} value={port}>{port}</option>
+                      <option key={port.name} value={port.name}>
+                        {port.name} - {port.description}
+                      </option>
                     ))}
                   </select>
                   <button 
