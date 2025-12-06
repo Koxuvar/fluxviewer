@@ -15,6 +15,19 @@ pub struct OscData {
     pub sender: String,
 }
 
+#[derive(Serialize, Clone)]
+pub struct SerialData {
+    pub timestamp: String,
+    pub bytes: Vec<u8>,
+    pub hex: String,
+    pub ascii: String,
+}
+
+pub enum SerialCommand {
+    Start { port: String, baud_rate: u32 },
+    Stop,
+}
+
 pub enum SacnCommand{
     Start {ip: String},
     Stop,

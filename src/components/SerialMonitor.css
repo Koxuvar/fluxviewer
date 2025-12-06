@@ -1,0 +1,207 @@
+.serial-window {
+  width: 700px;
+  height: 500px;
+}
+
+.serial-window.minimized {
+  height: auto;
+  min-width: auto;
+  width: auto;
+}
+
+.window-icon.serial {
+  color: var(--accent-serial, #f59e0b);
+}
+
+/* Serial Config Bar */
+.serial-config {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.config-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-md);
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.config-group label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.config-group select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.config-group select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-group select:focus {
+  outline: none;
+  border-color: var(--accent-serial, #f59e0b);
+}
+
+.port-select-group {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.port-select-group select {
+  min-width: 150px;
+}
+
+.refresh-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.view-toggle button {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-toggle button:first-child {
+  border-right: 1px solid var(--surface-border);
+}
+
+.view-toggle button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.view-toggle button.active {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--accent-serial, #f59e0b);
+}
+
+/* Start/Stop Button */
+.start-stop-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: var(--space-sm) var(--space-lg);
+  background: rgba(74, 222, 128, 0.2);
+  border: 1px solid var(--accent-success);
+  border-radius: var(--radius-sm);
+  color: var(--accent-success);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-left: auto;
+}
+
+.start-stop-btn:hover {
+  background: rgba(74, 222, 128, 0.3);
+}
+
+.start-stop-btn.listening {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: var(--accent-error);
+  color: var(--accent-error);
+}
+
+.start-stop-btn.listening:hover {
+  background: rgba(248, 113, 113, 0.3);
+}
+
+/* Message Display */
+.serial-window .message-list-header {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--surface-border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.serial-window .message-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-bottom: 1px solid var(--surface-border);
+  transition: background var(--transition-fast);
+}
+
+.serial-window .message-row:hover {
+  background: var(--surface-hover);
+}
+
+.col-data.mono {
+  font-family: var(--font-mono);
+  color: var(--accent-serial, #f59e0b);
+  word-break: break-all;
+}
+
+.window-icon.serial {
+  background: var(--accent-serial-dim);
+  color: var(--accent-serial);
+}

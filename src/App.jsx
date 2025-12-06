@@ -2,11 +2,13 @@ import { useState } from 'react';
 import './App.css';
 import OSCMonitor from './components/OSCMonitor';
 import DMXMonitor from './components/DMXMonitor';
+import SerialMonitor from './components/SerialMonitor';
 
 function App() {
   const [oscWindowOpen, setOscWindowOpen] = useState(false);
   const [dmxWindowOpen, setDmxWindowOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [serialWindowOpen, setSerialWindowOpen] = useState(false);
   
   // Network configuration - shared or separate IPs
   const [networkConfig, setNetworkConfig] = useState({
@@ -21,6 +23,7 @@ function App() {
   // OSC messages stored at app level so they persist when window closes
   const [oscMessages, setOscMessages] = useState([]);
   const [oscPaused, setOscPaused] = useState(false);
+  
 
   const clearOscMessages = () => setOscMessages([]);
 
@@ -39,7 +42,7 @@ function App() {
           </div>
           <div className="logo-title">
             <h1>Protocol Monitor</h1>
-            <span className="logo-subtitle">OSC • DMX • sACN</span>
+            <span className="logo-subtitle">OSC • SERIAL • sACN</span>
           </div>
         </div>
         <div className="status-indicator">
@@ -170,6 +173,23 @@ function App() {
               {dmxWindowOpen ? 'OPEN' : 'CLOSED'}
             </div>
           </button>
+          <button 
+            className={`monitor-btn ${serialWindowOpen ? 'active' : ''}`}
+            onClick={() => setSerialWindowOpen(!serialWindowOpen)}
+          >
+            <div className="btn-icon serial-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 9h16M4 15h16M9 9v6M15 9v6" />
+              </svg>
+            </div>
+            <div className="btn-content">
+              <span className="btn-title">Serial Monitor</span>
+              <span className="btn-desc">COM port data capture</span>
+            </div>
+            <div className="btn-status">
+              {serialWindowOpen ? 'OPEN' : 'CLOSED'}
+            </div>
+          </button>
         </div>
 
         <div className="quick-stats">
@@ -189,8 +209,8 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <span className="footer-text">Built for live events</span>
-        <span className="footer-version">v0.1.0</span>
+        <span className="footer-text">© flux media group, 2025</span>
+        <span className="footer-version">v0.2.0</span>
       </footer>
 
       {/* Floating Windows */}
@@ -216,6 +236,9 @@ function App() {
             universes: networkConfig.universes
           }}
         />
+      )}
+      {serialWindowOpen && (
+        <SerialMonitor onClose={() => setSerialWindowOpen(false)} />
       )}
     </div>
   );

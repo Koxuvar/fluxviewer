@@ -21,6 +21,8 @@
   --accent-osc-dim: rgba(34, 211, 238, 0.15);
   --accent-dmx: #a78bfa;
   --accent-dmx-dim: rgba(167, 139, 250, 0.15);
+  --accent-serial: #f59e0b;
+  --accent-serial-dim: rgba(245, 158, 11, 0.15);
   --accent-success: #4ade80;
   --accent-warning: #fbbf24;
   --accent-error: #f87171;
@@ -361,6 +363,11 @@ html, body, #root {
 .dmx-icon {
   background: var(--accent-dmx-dim);
   color: var(--accent-dmx);
+}
+
+.serial-icon {
+  background: var(--accent-serial-dim);
+  color: var(--accent-serial);
 }
 
 .btn-content {
