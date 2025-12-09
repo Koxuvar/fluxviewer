@@ -79,24 +79,13 @@ npm run tauri build
 
 Set IP to `0.0.0.0` to listen on all network interfaces.
 
-## Tech Stack
-
-- **Frontend**: React, CSS
-- **Backend**: Rust
-- **Framework**: Tauri v2
-- **Protocols**: 
-  - `rosc` - OSC parsing
-  - `sacn` - E1.31/sACN 
-  - `artnet_protocol` - Art-Net
-  - `serialport` - Serial communication
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a pull request.
+Contributions welcome! Please open an issue or submit a pull request. See [CONTRIBUTIONS](CONTRIBUTIONS) for more details.
 
 ## Acknowledgments
 
