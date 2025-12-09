@@ -1,0 +1,193 @@
+.artnet-window {
+  width: 680px;
+  height: 600px;
+}
+
+.artnet-window.minimized {
+  height: auto;
+  min-width: auto;
+  width: auto;
+}
+
+.window-icon.artnet {
+  background: var(--accent-artnet-dim);
+  color: var(--accent-artnet);
+}
+
+/* Universe Selector */
+.artnet-window .universe-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--surface-border);
+  gap: var(--space-md);
+}
+
+.artnet-window .universe-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  overflow-x: auto;
+  flex: 1;
+  padding: var(--space-xs) 0;
+}
+
+.artnet-window .universe-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.artnet-window .universe-tab:hover {
+  background: var(--surface-hover);
+  border-color: var(--text-muted);
+}
+
+.artnet-window .universe-tab.active {
+  background: var(--accent-artnet-dim);
+  border-color: var(--accent-artnet);
+}
+
+.artnet-window .universe-num {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.artnet-window .universe-tab.active .universe-num {
+  color: var(--accent-artnet);
+}
+
+.artnet-window .universe-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.artnet-window .universe-stats .stat-num {
+  color: var(--accent-artnet);
+}
+
+/* Channel Grid */
+.artnet-window .channel-header {
+  display: grid;
+  grid-template-columns: 48px repeat(16, 1fr);
+  gap: 1px;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.artnet-window .col-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2px 0;
+}
+
+.artnet-window .channel-grid {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.artnet-window .channel-row {
+  display: grid;
+  grid-template-columns: 48px repeat(16, 1fr);
+  gap: 1px;
+  margin-bottom: 1px;
+}
+
+.artnet-window .row-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--space-sm);
+}
+
+.artnet-window .channel-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--surface-border);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: default;
+  transition: all var(--transition-fast);
+  min-height: 28px;
+}
+
+.artnet-window .channel-cell:hover {
+  border-color: var(--text-muted);
+  z-index: 1;
+  transform: scale(1.1);
+}
+
+.artnet-window .channel-cell.active {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.artnet-window .channel-cell.highlight {
+  border-color: var(--accent-artnet);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  z-index: 2;
+}
+
+/* Compact View */
+.artnet-window .channel-grid.compact .channel-cell {
+  min-height: 20px;
+  font-size: 8px;
+}
+
+.artnet-window .channel-grid.compact .channel-row {
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.artnet-window .channel-grid.compact .channel-cell {
+  border-radius: 0;
+}
+
+/* Tooltip */
+.artnet-window .channel-tooltip {
+  position: absolute;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-artnet);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.artnet-window .tooltip-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-artnet);
+}

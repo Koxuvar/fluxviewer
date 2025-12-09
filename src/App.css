@@ -23,6 +23,8 @@
   --accent-dmx-dim: rgba(167, 139, 250, 0.15);
   --accent-serial: #f59e0b;
   --accent-serial-dim: rgba(245, 158, 11, 0.15);
+  --accent-artnet: #10b981;
+  --accent-artnet-dim: rgba(16, 185, 129, 0.15);
   --accent-success: #4ade80;
   --accent-warning: #fbbf24;
   --accent-error: #f87171;
@@ -306,9 +308,11 @@ html, body, #root {
   gap: var(--space-xl);
 }
 
-.monitor-controls {
-  display: flex;
+.monitor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-lg);
+  max-width: 700px;
 }
 
 .monitor-btn {
@@ -321,7 +325,6 @@ html, body, #root {
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all var(--transition-normal);
-  min-width: 280px;
 }
 
 .monitor-btn:hover {
@@ -335,9 +338,20 @@ html, body, #root {
   box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
 }
 
-.monitor-btn.active:nth-child(2) {
+/* Specific active states for each protocol */
+.monitor-btn:has(.sacn-icon).active {
   border-color: var(--accent-dmx);
   box-shadow: 0 0 20px rgba(167, 139, 250, 0.1);
+}
+
+.monitor-btn:has(.artnet-icon).active {
+  border-color: var(--accent-artnet);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.monitor-btn:has(.serial-icon).active {
+  border-color: var(--accent-serial);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
 }
 
 .btn-icon {
@@ -359,10 +373,14 @@ html, body, #root {
   background: var(--accent-osc-dim);
   color: var(--accent-osc);
 }
-
-.dmx-icon {
+.sacn-icon {
   background: var(--accent-dmx-dim);
   color: var(--accent-dmx);
+}
+
+.artnet-icon {
+  background: var(--accent-artnet-dim);
+  color: var(--accent-artnet);
 }
 
 .serial-icon {
@@ -370,9 +388,20 @@ html, body, #root {
   color: var(--accent-serial);
 }
 
-.btn-content {
-  flex: 1;
-  text-align: left;
+/* Active status badge colors */
+.monitor-btn:has(.sacn-icon).active .btn-status {
+  background: var(--accent-dmx-dim);
+  color: var(--accent-dmx);
+}
+
+.monitor-btn:has(.artnet-icon).active .btn-status {
+  background: var(--accent-artnet-dim);
+  color: var(--accent-artnet);
+}
+
+.monitor-btn:has(.serial-icon).active .btn-status {
+  background: var(--accent-serial-dim);
+  color: var(--accent-serial);
 }
 
 .btn-title {

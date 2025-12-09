@@ -3,27 +3,28 @@ import './App.css';
 import OSCMonitor from './components/OSCMonitor';
 import DMXMonitor from './components/DMXMonitor';
 import SerialMonitor from './components/SerialMonitor';
+import ArtnetMonitor from './components/ArtnetMonitor';
 
 function App() {
   const [oscWindowOpen, setOscWindowOpen] = useState(false);
-  const [dmxWindowOpen, setDmxWindowOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sacnWindowOpen, setSacnWindowOpen] = useState(false);
   const [serialWindowOpen, setSerialWindowOpen] = useState(false);
+  const [artnetWindowOpen, setArtnetWindowOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   
-  // Network configuration - shared or separate IPs
   const [networkConfig, setNetworkConfig] = useState({
     useSharedIp: true,
     sharedIp: '0.0.0.0',
     oscIp: '0.0.0.0',
     oscPort: 8000,
-    dmxIp: '0.0.0.0',
-    universes: '1-4',
+    sacnIp: '0.0.0.0',
+    sacnUniverses: '1-4',
+    artnetIp: '0.0.0.0',
+    artnetUniverses: '0-3',
   });
 
-  // OSC messages stored at app level so they persist when window closes
   const [oscMessages, setOscMessages] = useState([]);
   const [oscPaused, setOscPaused] = useState(false);
-  
 
   const clearOscMessages = () => setOscMessages([]);
 
@@ -42,7 +43,7 @@ function App() {
           </div>
           <div className="logo-title">
             <h1>Protocol Monitor</h1>
-            <span className="logo-subtitle">OSC • SERIAL • sACN</span>
+            <span className="logo-subtitle">OSC • sACN • Art-Net • Serial</span>
           </div>
         </div>
         <div className="status-indicator">
@@ -61,7 +62,6 @@ function App() {
         </button>
       </header>
 
-      {/* Network Settings Panel */}
       {settingsOpen && (
         <div className="settings-panel">
           <div className="settings-header">
@@ -78,7 +78,7 @@ function App() {
           
           <div className="settings-grid">
             {networkConfig.useSharedIp ? (
-              <div className="setting-group full-width">
+              <div className="setting-group">
                 <label>Listen IP</label>
                 <input
                   type="text"
@@ -91,7 +91,7 @@ function App() {
             ) : (
               <>
                 <div className="setting-group">
-                  <label>OSC Listen IP</label>
+                  <label>OSC IP</label>
                   <input
                     type="text"
                     value={networkConfig.oscIp}
@@ -100,11 +100,20 @@ function App() {
                   />
                 </div>
                 <div className="setting-group">
-                  <label>DMX/sACN Listen IP</label>
+                  <label>sACN IP</label>
                   <input
                     type="text"
-                    value={networkConfig.dmxIp}
-                    onChange={(e) => updateNetworkConfig('dmxIp', e.target.value)}
+                    value={networkConfig.sacnIp}
+                    onChange={(e) => updateNetworkConfig('sacnIp', e.target.value)}
+                    placeholder="0.0.0.0"
+                  />
+                </div>
+                <div className="setting-group">
+                  <label>Art-Net IP</label>
+                  <input
+                    type="text"
+                    value={networkConfig.artnetIp}
+                    onChange={(e) => updateNetworkConfig('artnetIp', e.target.value)}
                     placeholder="0.0.0.0"
                   />
                 </div>
@@ -125,18 +134,29 @@ function App() {
               <label>sACN Universes</label>
               <input
                 type="text"
+                value={networkConfig.sacnUniverses}
+                onChange={(e) => updateNetworkConfig('sacnUniverses', e.target.value)}
                 placeholder="1-4"
-                value={networkConfig.universes}
-                onChange={(e) => updateNetworkConfig('universes', e.target.value)}
               />
               <span className="setting-hint">Range or comma-separated</span>
+            </div>
+
+            <div className="setting-group">
+              <label>Art-Net Universes</label>
+              <input
+                type="text"
+                value={networkConfig.artnetUniverses}
+                onChange={(e) => updateNetworkConfig('artnetUniverses', e.target.value)}
+                placeholder="0-3"
+              />
+              <span className="setting-hint">Starts at 0</span>
             </div>
           </div>
         </div>
       )}
 
       <main className="app-main">
-        <div className="monitor-controls">
+        <div className="monitor-grid">
           <button 
             className={`monitor-btn ${oscWindowOpen ? 'active' : ''}`}
             onClick={() => setOscWindowOpen(!oscWindowOpen)}
@@ -156,23 +176,43 @@ function App() {
           </button>
 
           <button 
-            className={`monitor-btn ${dmxWindowOpen ? 'active' : ''}`}
-            onClick={() => setDmxWindowOpen(!dmxWindowOpen)}
+            className={`monitor-btn ${sacnWindowOpen ? 'active' : ''}`}
+            onClick={() => setSacnWindowOpen(!sacnWindowOpen)}
           >
-            <div className="btn-icon dmx-icon">
+            <div className="btn-icon sacn-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M3 9h18M9 21V9" />
               </svg>
             </div>
             <div className="btn-content">
-              <span className="btn-title">DMX Monitor</span>
-              <span className="btn-desc">sACN universe viewer</span>
+              <span className="btn-title">sACN Monitor</span>
+              <span className="btn-desc">E1.31 universe viewer</span>
             </div>
             <div className="btn-status">
-              {dmxWindowOpen ? 'OPEN' : 'CLOSED'}
+              {sacnWindowOpen ? 'OPEN' : 'CLOSED'}
             </div>
           </button>
+
+          <button 
+            className={`monitor-btn ${artnetWindowOpen ? 'active' : ''}`}
+            onClick={() => setArtnetWindowOpen(!artnetWindowOpen)}
+          >
+            <div className="btn-icon artnet-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2v20M2 12h20" />
+              </svg>
+            </div>
+            <div className="btn-content">
+              <span className="btn-title">Art-Net Monitor</span>
+              <span className="btn-desc">Art-Net universe viewer</span>
+            </div>
+            <div className="btn-status">
+              {artnetWindowOpen ? 'OPEN' : 'CLOSED'}
+            </div>
+          </button>
+
           <button 
             className={`monitor-btn ${serialWindowOpen ? 'active' : ''}`}
             onClick={() => setSerialWindowOpen(!serialWindowOpen)}
@@ -191,29 +231,13 @@ function App() {
             </div>
           </button>
         </div>
-
-        <div className="quick-stats">
-          <div className="stat-card">
-            <span className="stat-value">0</span>
-            <span className="stat-label">OSC Messages/s</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">0</span>
-            <span className="stat-label">Active Universes</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">--</span>
-            <span className="stat-label">Last Activity</span>
-          </div>
-        </div>
       </main>
 
       <footer className="app-footer">
-        <span className="footer-text">© flux media group, 2025</span>
-        <span className="footer-version">v0.2.0</span>
+        <span className="footer-text">Built for live events</span>
+        <span className="footer-version">v0.3.0</span>
       </footer>
 
-      {/* Floating Windows */}
       {oscWindowOpen && (
         <OSCMonitor 
           onClose={() => setOscWindowOpen(false)}
@@ -228,12 +252,21 @@ function App() {
           }}
         />
       )}
-      {dmxWindowOpen && (
+      {sacnWindowOpen && (
         <DMXMonitor 
-          onClose={() => setDmxWindowOpen(false)}
+          onClose={() => setSacnWindowOpen(false)}
           config={{
-            ip: networkConfig.useSharedIp ? networkConfig.sharedIp : networkConfig.dmxIp,
-            universes: networkConfig.universes
+            ip: networkConfig.useSharedIp ? networkConfig.sharedIp : networkConfig.sacnIp,
+            universes: networkConfig.sacnUniverses
+          }}
+        />
+      )}
+      {artnetWindowOpen && (
+        <ArtnetMonitor 
+          onClose={() => setArtnetWindowOpen(false)}
+          config={{
+            ip: networkConfig.useSharedIp ? networkConfig.sharedIp : networkConfig.artnetIp,
+            universes: networkConfig.artnetUniverses
           }}
         />
       )}

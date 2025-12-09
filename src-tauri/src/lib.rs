@@ -5,11 +5,13 @@ mod osc_listener;
 mod sacn_listener;
 mod osc_message_data;
 mod serial_listener;
+mod artnet_listener;
 
 struct AppState {
     osc_cmd_tx: std::sync::mpsc::Sender<protocols::OscCommand>,
     sacn_cmd_tx: std::sync::mpsc::Sender<protocols::SacnCommand>,
     serial_cmd_tx: std::sync::mpsc::Sender<protocols::SerialCommand>,
+    artnet_cmd_tx: std::sync::mpsc::Sender<protocols::ArtnetCommand>,
 }
 
 #[tauri::command]
@@ -73,6 +75,34 @@ fn serial_list_ports() -> Vec<protocols::SerialPortInfo> {
     serial_listener::list_ports()
 }
 
+#[tauri::command]
+fn artnet_start_listener(ip: String, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    state.artnet_cmd_tx
+        .send(protocols::ArtnetCommand::Start { ip })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn artnet_stop_listener(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    state.artnet_cmd_tx
+        .send(protocols::ArtnetCommand::Stop)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn artnet_subscribe_universe(universe: u16, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    state.artnet_cmd_tx
+        .send(protocols::ArtnetCommand::SubscribeUniverse(universe))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn artnet_unsubscribe_universe(universe: u16, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    state.artnet_cmd_tx
+        .send(protocols::ArtnetCommand::UnsubscribeUniverse(universe))
+        .map_err(|e| e.to_string())
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -85,6 +115,9 @@ pub fn run() {
             let (serial_tx, serial_rx) = std::sync::mpsc::channel::<protocols::SerialData>();
             let (serial_cmd_tx, serial_cmd_rx) = std::sync::mpsc::channel::<protocols::SerialCommand>();
 
+            let (artnet_tx, artnet_rx) = std::sync::mpsc::channel::<protocols::DmxData>();
+            let (artnet_cmd_tx, artnet_cmd_rx) = std::sync::mpsc::channel::<protocols::ArtnetCommand>();
+
             std::thread::spawn(move || {
                 osc_listener::start(osc_tx, osc_cmd_rx);
             });
@@ -94,6 +127,10 @@ pub fn run() {
 
             std::thread::spawn(move || {
                serial_listener::start(serial_tx, serial_cmd_rx);
+            });
+
+            std::thread::spawn(move || {
+               artnet_listener::start(artnet_tx, artnet_cmd_rx);
             });
 
             let app_handle = app.handle().clone();
@@ -117,10 +154,18 @@ pub fn run() {
                 }
             });
 
+            let app_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                while let Ok(dmx_data) = artnet_rx.recv() {
+                    let _ = app_handle.emit("artnet-universe-data", &dmx_data);
+                }
+            });
+
             app.manage(AppState {
                 osc_cmd_tx,
                 sacn_cmd_tx,
                 serial_cmd_tx,
+                artnet_cmd_tx,
             });
             Ok(())
         })
@@ -134,6 +179,10 @@ pub fn run() {
             serial_start_listener,
             serial_stop_listener,
             serial_list_ports,
+            artnet_start_listener,
+            artnet_stop_listener,
+            artnet_subscribe_universe,
+            artnet_unsubscribe_universe,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

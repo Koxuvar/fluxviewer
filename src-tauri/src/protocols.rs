@@ -45,3 +45,10 @@ pub enum OscCommand {
     Start { ip: String, port: u16 },
     Stop,
 }
+
+pub enum ArtnetCommand {
+    Start { ip: String },
+    Stop,
+    SubscribeUniverse(u16),
+    UnsubscribeUniverse(u16),
+}
