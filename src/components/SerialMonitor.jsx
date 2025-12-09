@@ -4,16 +4,16 @@ import { listen } from '@tauri-apps/api/event';
 import './SerialMonitor.css';
 
 function SerialMonitor({ onClose }) {
-  const [messages, setMessages] = useState([]);
+  const [rawBytes, setRawBytes] = useState([]);
   const [availablePorts, setAvailablePorts] = useState([]);
   const [selectedPort, setSelectedPort] = useState('');
   const [baudRate, setBaudRate] = useState(115200);
   const [viewMode, setViewMode] = useState('hex'); // 'hex' or 'ascii'
+  const [delimiter, setDelimiter] = useState('newline');
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef(null);
-  const messageIdRef = useRef(0);
   const windowRef = useRef(null);
   const [position, setPosition] = useState({ x: 200, y: 200 });
   const [isDragging, setIsDragging] = useState(false);
@@ -52,17 +52,10 @@ function SerialMonitor({ onClose }) {
       if (isPaused) return;
 
       const payload = event.payload;
-      const newMessage = {
-        id: messageIdRef.current++,
-        timestamp: payload.timestamp,
-        hex: payload.hex,
-        ascii: payload.ascii,
-        bytes: payload.bytes,
-      };
-
-      setMessages(prev => {
-        const updated = [...prev, newMessage];
-        return updated.slice(-500); // Keep last 500 messages
+      setRawBytes(prev => {
+        const updated = [...prev, ...payload.bytes];
+        // Keep last 4096 bytes
+        return updated.slice(-4096);
       });
     });
 
@@ -76,7 +69,7 @@ function SerialMonitor({ onClose }) {
     if (!isPaused && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isPaused]);
+  }, [rawBytes, isPaused]);
 
   const handleStartStop = async () => {
     if (isListening) {
@@ -97,7 +90,7 @@ function SerialMonitor({ onClose }) {
     }
   };
 
-  const handleClear = () => setMessages([]);
+  const handleClear = () => setRawBytes([]);
 
   const refreshPorts = async () => {
     try {
@@ -106,6 +99,69 @@ function SerialMonitor({ onClose }) {
     } catch (err) {
       console.error('Failed to refresh ports:', err);
     }
+  };
+
+  // Format bytes into hex dump rows (16 bytes per row)
+  const formatHexDump = () => {
+    const rows = [];
+    for (let i = 0; i < rawBytes.length; i += 16) {
+      const chunk = rawBytes.slice(i, i + 16);
+      const offset = i.toString(16).toUpperCase().padStart(8, '0');
+      
+      const hexParts = [];
+      for (let j = 0; j < 16; j++) {
+        if (j < chunk.length) {
+          hexParts.push(chunk[j].toString(16).toUpperCase().padStart(2, '0'));
+        } else {
+          hexParts.push('  ');
+        }
+      }
+      const hex = hexParts.slice(0, 8).join(' ') + '  ' + hexParts.slice(8).join(' ');
+
+      const ascii = chunk.map(b => {
+        if (b >= 0x20 && b <= 0x7E) {
+          return String.fromCharCode(b);
+        }
+        return '.';
+      }).join('');
+
+      rows.push({ offset, hex, ascii });
+    }
+    return rows;
+  };
+
+  // Format bytes as ASCII lines with delimiter
+  const formatAsciiLines = () => {
+    let text = rawBytes.map(b => {
+      if (b >= 0x20 && b <= 0x7E) {
+        return String.fromCharCode(b);
+      } else if (b === 0x0A) {
+        return '\n';
+      } else if (b === 0x0D) {
+        return '\r';
+      }
+      return '';
+    }).join('');
+
+    let lines = [];
+    switch (delimiter) {
+      case 'newline':
+        lines = text.split('\n').map(l => l.replace(/\r/g, '')).filter(Boolean);
+        break;
+      case 'cr':
+        lines = text.split('\r').map(l => l.replace(/\n/g, '')).filter(Boolean);
+        break;
+      case 'both':
+        lines = text.split(/\r?\n|\r/).filter(Boolean);
+        break;
+      case 'none':
+        lines = [text.replace(/[\r\n]/g, '')];
+        break;
+      default:
+        lines = text.split('\n').filter(Boolean);
+    }
+    
+    return lines;
   };
 
   // Dragging handlers
@@ -141,6 +197,8 @@ function SerialMonitor({ onClose }) {
     };
   }, [isDragging, dragOffset]);
 
+  const hexRows = formatHexDump();
+
   return (
     <div 
       className={`floating-window serial-window ${isMinimized ? 'minimized' : ''}`}
@@ -158,7 +216,7 @@ function SerialMonitor({ onClose }) {
           <span className={`status-badge ${isListening ? 'listening' : 'stopped'}`}>
             {isListening ? 'LISTENING' : 'STOPPED'}
           </span>
-          <span className="message-count">{messages.length} packets</span>
+          <span className="message-count">{rawBytes.length} bytes</span>
         </div>
         <div className="window-controls">
           <button 
@@ -269,6 +327,21 @@ function SerialMonitor({ onClose }) {
                 </div>
               </div>
 
+              {viewMode === 'ascii' && (
+                <div className="config-group">
+                  <label>Delimiter</label>
+                  <select
+                    value={delimiter}
+                    onChange={(e) => setDelimiter(e.target.value)}
+                  >
+                    <option value="newline">Newline (\n)</option>
+                    <option value="cr">Carriage Return (\r)</option>
+                    <option value="both">Both (NL & CR)</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+              )}
+
               <button 
                 className={`start-stop-btn ${isListening ? 'listening' : ''}`}
                 onClick={handleStartStop}
@@ -278,29 +351,52 @@ function SerialMonitor({ onClose }) {
             </div>
           </div>
 
-          <div className="message-list-header">
-            <span className="col-time">Time</span>
-            <span className="col-data">Data</span>
-          </div>
+          {viewMode === 'hex' ? (
+            <>
+            <div className="hex-dump-header">
+              <span className="col-offset">Offset</span>
+              <span className="col-hex">{'00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F'}</span>
+              <span className="col-ascii">ASCII</span>
+            </div> 
 
-          <div className="message-list">
-            {messages.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-icon">⌁</span>
-                <span>{isListening ? 'Waiting for serial data...' : 'Select a port and click Start'}</span>
+              <div className="hex-dump-list">
+                {hexRows.length === 0 ? (
+                  <div className="empty-state">
+                    <span className="empty-icon">⌁</span>
+                    <span>{isListening ? 'Waiting for serial data...' : 'Select a port and click Start'}</span>
+                  </div>
+                ) : (
+                  hexRows.map((row, idx) => (
+                    <div key={idx} className="hex-dump-row">
+                      <span className="col-offset">{row.offset}</span>
+                      <span className="col-hex">{row.hex}</span>
+                      <span className="col-ascii-data">|{row.ascii.padEnd(16)}|</span>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className="message-row">
-                  <span className="col-time">{msg.timestamp}</span>
-                  <span className="col-data mono">
-                    {viewMode === 'hex' ? msg.hex : msg.ascii}
-                  </span>
+            </>
+          ) : (
+            <div className="ascii-view">
+              {rawBytes.length === 0 ? (
+                <div className="empty-state">
+                  <span className="empty-icon">⌁</span>
+                  <span>{isListening ? 'Waiting for serial data...' : 'Select a port and click Start'}</span>
                 </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              ) : (
+                <div className="ascii-lines">
+                  {formatAsciiLines().map((line, idx) => (
+                    <div key={idx} className="ascii-line">
+                      <span className="line-number">{idx + 1}</span>
+                      <span className="line-content">{line}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
 
           {isPaused && (
             <div className="paused-indicator">
