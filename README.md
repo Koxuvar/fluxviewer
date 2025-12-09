@@ -36,7 +36,7 @@ A real-time protocol monitoring tool for live events and entertainment productio
 
 ### Pre-built Binaries
 
-Download the latest release for your platform from the [Releases](https://github.com/yourusername/protocol-monitor/releases) page.
+Download the latest release for your platform from the [Releases](https://github.com/Koxuvar/ViewerApp/releases) page.
 
 ### Build from Source
 
