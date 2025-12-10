@@ -85,7 +85,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a pull request. See [CONTRIBUTIONS](CONTRIBUTIONS) for more details.
+Contributions welcome! Please open an issue or submit a pull request. See [CONTRIBUTING](CONTRIBUTING.md) for more details.
 
 ## Acknowledgments
 
